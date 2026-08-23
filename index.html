@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>배송기사 스케줄 관리 시스템</title>
-    <!-- Google Fonts & Font Awesome Icons -->
+    <title>배송기사 스케줄 현황</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -12,7 +11,6 @@
     <style>
         :root {
             --primary: #2563eb;
-            --primary-hover: #1d4ed8;
             --bg-main: #f1f5f9;
             --surface: #ffffff;
             --text-main: #0f172a;
@@ -25,536 +23,82 @@
             --danger: #dc2626;
             --danger-bg: #fee2e2;
             --radius: 12px;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Noto Sans KR', -apple-system, sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); padding: 16px 12px; min-height: 100vh; }
+        .app-container { max-width: 900px; margin: 0 auto; }
 
-        body {
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            line-height: 1.5;
-            padding: 20px 12px;
-            min-height: 100vh;
-        }
-
-        .app-container {
-            max-width: 1080px;
-            margin: 0 auto;
-        }
-
-        /* Header */
         header {
-            background: var(--surface);
-            padding: 20px 24px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 16px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border);
+            background: var(--surface); padding: 16px 20px; border-radius: var(--radius);
+            box-shadow: var(--shadow); border: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
         }
+        .logo-area { display: flex; align-items: center; gap: 10px; }
+        .logo-icon { background: #eff6ff; color: var(--primary); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .logo-text h1 { font-size: 1.15rem; font-weight: 700; }
 
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon {
-            background: #eff6ff;
-            color: var(--primary);
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3rem;
-        }
-
-        .logo-text h1 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--text-main);
-        }
-
-        .logo-text p {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .admin-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-tag {
-            font-size: 0.8rem;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .status-tag.user {
-            background: #f1f5f9;
-            color: var(--text-muted);
-        }
-
-        .status-tag.admin {
-            background: #dbeafe;
-            color: var(--primary);
-            border: 1px solid #bfdbfe;
-        }
-
-        .btn {
-            padding: 9px 16px;
-            border-radius: 8px;
-            font-size: 0.88rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-        }
-
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-hover); }
-
-        .btn-secondary { background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border); }
-        .btn-secondary:hover { background: #e2e8f0; }
-
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-danger:hover { background: #b91c1c; }
-
-        /* Summary Cards */
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        .summary-card {
-            background: var(--surface);
-            padding: 18px 20px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .summary-info span {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        .summary-info h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-top: 4px;
-        }
-
-        .summary-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-        }
-
-        /* Filter Section */
         .filter-card {
-            background: var(--surface);
-            padding: 20px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            margin-bottom: 20px;
+            background: var(--surface); padding: 16px; border-radius: var(--radius);
+            box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 16px;
         }
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+        input, select { padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.88rem; outline: none; background: #f8fafc; width: 100%; }
 
-        .filter-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-        }
+        .table-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden; }
+        .table-wrapper { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 500px; }
+        th { background-color: #f8fafc; padding: 12px 16px; font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+        td { padding: 14px 16px; font-size: 0.88rem; border-bottom: 1px solid var(--border); }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .form-group label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
-
-        input, select {
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            font-size: 0.9rem;
-            width: 100%;
-            outline: none;
-            transition: border-color 0.2s;
-            background: #f8fafc;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--primary);
-            background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        /* Admin Action Form */
-        .admin-form-card {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            padding: 20px;
-            border-radius: var(--radius);
-            margin-bottom: 20px;
-            display: none; /* 관리자 모드 시 세팅 */
-        }
-
-        .admin-form-card h2 {
-            font-size: 1.05rem;
-            margin-bottom: 14px;
-            color: #1e40af;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Table Card */
-        .table-card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            overflow: hidden;
-        }
-
-        .table-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .table-header h2 {
-            font-size: 1.05rem;
-            font-weight: 700;
-        }
-
-        .table-wrapper {
-            width: 100%;
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            min-width: 600px;
-        }
-
-        th {
-            background-color: #f8fafc;
-            padding: 12px 20px;
-            font-size: 0.82rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            border-bottom: 1px solid var(--border);
-            text-transform: uppercase;
-        }
-
-        td {
-            padding: 14px 20px;
-            font-size: 0.9rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover td {
-            background-color: #f8fafc;
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.78rem;
-            font-weight: 600;
-        }
-
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
         .badge-working { background: var(--success-bg); color: var(--success); }
         .badge-standby { background: var(--warning-bg); color: var(--warning); }
         .badge-off { background: var(--danger-bg); color: var(--danger); }
 
-        .no-data {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
-        }
-
-        .no-data i {
-            font-size: 2rem;
-            margin-bottom: 8px;
-            display: block;
-            opacity: 0.5;
-        }
-
-        /* Admin Only Elements */
-        .admin-only {
-            display: none;
-        }
-
-        /* Modal Popup */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s ease;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 28px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-
-        .modal-header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-header i {
-            font-size: 2.2rem;
-            color: var(--primary);
-            margin-bottom: 10px;
-        }
-
-        .modal-header h3 {
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .modal-buttons .btn {
-            flex: 1;
-            justify-content: center;
-        }
-
-        .error-msg {
-            color: var(--danger);
-            font-size: 0.8rem;
-            margin-top: 6px;
-            display: none;
-        }
-
-        /* Responsive Mobile Layout */
-        @media (max-width: 640px) {
-            body { padding: 12px 8px; }
-            header { padding: 16px; }
-            .logo-text h1 { font-size: 1.1rem; }
-            .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .summary-card { padding: 14px; }
-            .summary-info h3 { font-size: 1.2rem; }
-            .summary-icon { width: 36px; height: 36px; font-size: 0.95rem; }
-        }
+        .no-data { text-align: center; padding: 30px; color: var(--text-muted); }
     </style>
 </head>
 <body>
-
     <div class="app-container">
-        
-        <!-- Header Section -->
         <header>
             <div class="logo-area">
-                <div class="logo-icon">
-                    <i class="fa-solid fa-truck-fast"></i>
-                </div>
+                <div class="logo-icon"><i class="fa-solid fa-truck-fast"></i></div>
                 <div class="logo-text">
                     <h1>배송기사 스케줄 현황</h1>
-                    <p>스마트 배송 물류 관리 시스템</p>
                 </div>
             </div>
-            
-            <div class="admin-status">
-                <span id="userStatusTag" class="status-tag user">
-                    <i class="fa-solid fa-user"></i> 일반기사 모드 (열람전용)
-                </span>
-                <span id="adminStatusTag" class="status-tag admin admin-only">
-                    <i class="fa-solid fa-shield-halved"></i> 관리자 권한 활성화
-                </span>
-
-                <button id="loginBtn" class="btn btn-primary" onclick="openLoginModal()">
-                    <i class="fa-solid fa-right-to-bracket"></i> 관리자 로그인
-                </button>
-                <button id="logoutBtn" class="btn btn-secondary admin-only" onclick="logoutAdmin()">
-                    <i class="fa-solid fa-right-from-bracket"></i> 로그아웃
-                </button>
-            </div>
+            <button class="btn" onclick="fetchSchedules()" style="background:none; border:none; color:var(--primary); cursor:pointer; font-weight:600;">
+                <i class="fa-solid fa-rotate"></i> 새로고침
+            </button>
         </header>
 
-        <!-- Summary Cards -->
-        <div class="summary-grid">
-            <div class="summary-card">
-                <div class="summary-info">
-                    <span>오늘 근무 기사</span>
-                    <h3 id="countWorking">0명</h3>
-                </div>
-                <div class="summary-icon" style="background: var(--success-bg); color: var(--success);">
-                    <i class="fa-solid fa-truck-ramp-box"></i>
-                </div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-info">
-                    <span>대기 인원</span>
-                    <h3 id="countStandby">0명</h3>
-                </div>
-                <div class="summary-icon" style="background: var(--warning-bg); color: var(--warning);">
-                    <i class="fa-solid fa-clock"></i>
-                </div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-info">
-                    <span>휴무 인원</span>
-                    <h3 id="countOff">0명</h3>
-                </div>
-                <div class="summary-icon" style="background: var(--danger-bg); color: var(--danger);">
-                    <i class="fa-solid fa-mug-hot"></i>
-                </div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-info">
-                    <span>전체 등록 일정</span>
-                    <h3 id="countTotal">0건</h3>
-                </div>
-                <div class="summary-icon" style="background: #eff6ff; color: var(--primary);">
-                    <i class="fa-solid fa-calendar-days"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Admin Only Form -->
-        <div class="admin-form-card admin-only" id="adminAddForm">
-            <h2><i class="fa-solid fa-square-plus"></i> 신규 배송 스케줄 등록 (관리자)</h2>
-            <div class="filter-grid">
-                <div class="form-group">
-                    <label>날짜</label>
-                    <input type="date" id="newDate">
-                </div>
-                <div class="form-group">
-                    <label>기사 이름</label>
-                    <input type="text" id="newName" placeholder="예: 홍길동">
-                </div>
-                <div class="form-group">
-                    <label>담당 배송 구역</label>
-                    <input type="text" id="newArea" placeholder="예: 강남 1구역">
-                </div>
-                <div class="form-group">
-                    <label>근무 상태</label>
-                    <select id="newStatus">
-                        <option value="근무">근무</option>
-                        <option value="대기">대기</option>
-                        <option value="휴무">휴무</option>
-                    </select>
-                </div>
-            </div>
-            <div style="margin-top: 14px; text-align: right;">
-                <button class="btn btn-primary" onclick="addSchedule()">
-                    <i class="fa-solid fa-plus"></i> 일정 저장하기
-                </button>
-            </div>
-        </div>
-
-        <!-- Filter Controls -->
         <div class="filter-card">
             <div class="filter-grid">
                 <div class="form-group">
-                    <label><i class="fa-solid fa-calendar"></i> 날짜 검색</label>
+                    <label>날짜 검색</label>
                     <input type="date" id="filterDate" onchange="applyFilters()">
                 </div>
                 <div class="form-group">
-                    <label><i class="fa-solid fa-magnifying-glass"></i> 기사명 / 구역 검색</label>
-                    <input type="text" id="filterKeyword" placeholder="기사 이름 또는 담당 구역 입력" oninput="applyFilters()">
+                    <label>기사명 / 구역</label>
+                    <input type="text" id="filterKeyword" placeholder="이름 또는 구역" oninput="applyFilters()">
                 </div>
                 <div class="form-group">
-                    <label><i class="fa-solid fa-filter"></i> 상태 필터</label>
+                    <label>근무 상태</label>
                     <select id="filterStatus" onchange="applyFilters()">
                         <option value="전체">전체 보기</option>
-                        <option value="근무">근무만 보기</option>
-                        <option value="대기">대기만 보기</option>
-                        <option value="휴무">휴무만 보기</option>
+                        <option value="근무">근무만</option>
+                        <option value="대기">대기만</option>
+                        <option value="휴무">휴무만</option>
                     </select>
-                </div>
-                <div class="form-group" style="justify-content: flex-end;">
-                    <button class="btn btn-secondary" onclick="resetFilters()">
-                        <i class="fa-solid fa-rotate-left"></i> 필터 초기화
-                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Schedule Table -->
         <div class="table-card">
-            <div class="table-header">
-                <h2>배송 일정 목록</h2>
-                <span style="font-size: 0.8rem; color: var(--text-muted);" id="todayDateDisplay"></span>
-            </div>
             <div class="table-wrapper">
                 <table>
                     <thead>
@@ -562,146 +106,40 @@
                             <th>날짜</th>
                             <th>기사명</th>
                             <th>담당 구역</th>
-                            <th>근무 상태</th>
-                            <th class="admin-only" style="width: 90px; text-align: center;">관리</th>
+                            <th>상태</th>
                         </tr>
                     </thead>
                     <tbody id="scheduleTableBody">
-                        <!-- JS 렌더링 영역 -->
+                        <tr><td colspan="4" class="no-data">데이터를 불러오는 중입니다...</td></tr>
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Login Modal -->
-    <div class="modal-overlay" id="loginModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <i class="fa-solid fa-user-shield"></i>
-                <h3>관리자 인증</h3>
-                <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">관리자 비밀번호를 입력해주세요.</p>
-            </div>
-            <div class="form-group">
-                <input type="password" id="inputPassword" placeholder="비밀번호 입력" onkeypress="handleKeyPress(event)">
-                <div class="error-msg" id="passwordError">비밀번호가 올바르지 않습니다.</div>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="closeLoginModal()">취소</button>
-                <button class="btn btn-primary" onclick="submitLogin()">로그인</button>
             </div>
         </div>
     </div>
 
     <script>
-        const ADMIN_PASS = "4497";
-        let isAdmin = false;
+        let allSchedules = [];
 
-        // 초기 샘플 데이터 (LocalStorage 데이터가 없을 때 자동 세팅)
-        const initialData = [
-            { id: 1, date: getTodayStr(), name: "홍길동", area: "강남 1구역", status: "근무" },
-            { id: 2, date: getTodayStr(), name: "김철수", area: "서초 2구역", status: "근무" },
-            { id: 3, date: getTodayStr(), name: "이영희", area: "송파 3구역", status: "대기" },
-            { id: 4, date: getTodayStr(), name: "박민수", area: "마포 1구역", status: "휴무" }
-        ];
-
-        let schedules = JSON.parse(localStorage.getItem('driver_schedules')) || initialData;
-
-        function getTodayStr() {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        // 페이지 로드 시
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('newDate').value = getTodayStr();
-            document.getElementById('todayDateDisplay').innerText = `오늘 날짜: ${getTodayStr()}`;
-            saveData();
-            updateUI();
-        });
-
-        function saveData() {
-            localStorage.setItem('driver_schedules', JSON.stringify(schedules));
-        }
-
-        // 로그인 모달
-        function openLoginModal() {
-            document.getElementById('inputPassword').value = '';
-            document.getElementById('passwordError').style.display = 'none';
-            document.getElementById('loginModal').classList.add('active');
-            setTimeout(() => document.getElementById('inputPassword').focus(), 100);
-        }
-
-        function closeLoginModal() {
-            document.getElementById('loginModal').classList.remove('active');
-        }
-
-        function handleKeyPress(e) {
-            if (e.key === 'Enter') submitLogin();
-        }
-
-        function submitLogin() {
-            const pass = document.getElementById('inputPassword').value;
-            if (pass === ADMIN_PASS) {
-                isAdmin = true;
-                closeLoginModal();
-                updateUI();
-            } else {
-                document.getElementById('passwordError').style.display = 'block';
+        async function fetchSchedules() {
+            try {
+                // 타임스탬프(?t=시간)를 붙여 브라우저 캐시 방지
+                const response = await fetch('./data.json?t=' + new Date().getTime());
+                if (!response.ok) throw new Error('데이터 불러오기 실패');
+                
+                allSchedules = await response.json();
+                applyFilters();
+            } catch (error) {
+                document.getElementById('scheduleTableBody').innerHTML = 
+                    '<tr><td colspan="4" class="no-data">스케줄 데이터를 불러올 수 없습니다.</td></tr>';
             }
         }
 
-        function logoutAdmin() {
-            isAdmin = false;
-            updateUI();
-        }
-
-        // UI 모드 및 데이터 업데이트
-        function updateUI() {
-            // 관리자 요소 보이기/숨기기
-            const adminTags = document.querySelectorAll('.admin-only');
-            adminTags.forEach(el => {
-                if (isAdmin) {
-                    if (el.tagName === 'TH' || el.tagName === 'TD') {
-                        el.style.display = 'table-cell';
-                    } else {
-                        el.style.display = 'flex';
-                        if (el.id === 'adminAddForm') el.style.display = 'block';
-                    }
-                } else {
-                    el.style.display = 'none';
-                }
-            });
-
-            document.getElementById('userStatusTag').style.display = isAdmin ? 'none' : 'flex';
-            document.getElementById('loginBtn').style.display = isAdmin ? 'none' : 'inline-flex';
-
-            calculateSummary();
-            applyFilters();
-        }
-
-        // 요약 카드 계산
-        function calculateSummary() {
-            const today = getTodayStr();
-            const todaySchedules = schedules.filter(s => s.date === today);
-
-            document.getElementById('countWorking').innerText = `${todaySchedules.filter(s => s.status === '근무').length}명`;
-            document.getElementById('countStandby').innerText = `${todaySchedules.filter(s => s.status === '대기').length}명`;
-            document.getElementById('countOff').innerText = `${todaySchedules.filter(s => s.status === '휴무').length}명`;
-            document.getElementById('countTotal').innerText = `${schedules.length}건`;
-        }
-
-        // 필터링 및 테이블 출력
         function applyFilters() {
             const dateVal = document.getElementById('filterDate').value;
             const keywordVal = document.getElementById('filterKeyword').value.trim().toLowerCase();
             const statusVal = document.getElementById('filterStatus').value;
 
-            const filtered = schedules.filter(item => {
+            const filtered = allSchedules.filter(item => {
                 const matchDate = !dateVal || item.date === dateVal;
                 const matchKeyword = !keywordVal || 
                     item.name.toLowerCase().includes(keywordVal) || 
@@ -714,105 +152,35 @@
             renderTable(filtered);
         }
 
-        function resetFilters() {
-            document.getElementById('filterDate').value = '';
-            document.getElementById('filterKeyword').value = '';
-            document.getElementById('filterStatus').value = '전체';
-            applyFilters();
-        }
-
         function renderTable(data) {
             const tbody = document.getElementById('scheduleTableBody');
             tbody.innerHTML = '';
 
             if (data.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="${isAdmin ? 5 : 4}" class="no-data">
-                            <i class="fa-solid fa-calendar-xmark"></i>
-                            조건에 일치하는 배송 스케줄이 없습니다.
-                        </td>
-                    </tr>`;
+                tbody.innerHTML = '<tr><td colspan="4" class="no-data">조회된 스케줄이 없습니다.</td></tr>';
                 return;
             }
 
-            // 날짜 오름차순 정렬
             data.sort((a, b) => new Date(a.date) - new Date(b.date));
 
             data.forEach(item => {
                 let badgeHTML = '';
-                if (item.status === '근무') {
-                    badgeHTML = `<span class="badge badge-working"><i class="fa-solid fa-check"></i> 근무</span>`;
-                } else if (item.status === '대기') {
-                    badgeHTML = `<span class="badge badge-standby"><i class="fa-solid fa-pause"></i> 대기</span>`;
-                } else {
-                    badgeHTML = `<span class="badge badge-off"><i class="fa-solid fa-xmark"></i> 휴무</span>`;
-                }
+                if (item.status === '근무') badgeHTML = `<span class="badge badge-working">근무</span>`;
+                else if (item.status === '대기') badgeHTML = `<span class="badge badge-standby">대기</span>`;
+                else badgeHTML = `<span class="badge badge-off">휴무</span>`;
 
                 const tr = document.createElement('tr');
-                let rowContent = `
+                tr.innerHTML = `
                     <td><strong>${item.date}</strong></td>
                     <td>${item.name}</td>
                     <td>${item.area}</td>
                     <td>${badgeHTML}</td>
                 `;
-
-                if (isAdmin) {
-                    rowContent += `
-                        <td style="text-align: center;">
-                            <button class="btn btn-danger" style="padding: 4px 8px; font-size:0.78rem;" onclick="deleteSchedule(${item.id})">
-                                <i class="fa-solid fa-trash"></i> 삭제
-                            </button>
-                        </td>`;
-                }
-
-                tr.innerHTML = rowContent;
                 tbody.appendChild(tr);
             });
         }
 
-        // 스케줄 추가 (관리자 전용)
-        function addSchedule() {
-            if (!isAdmin) return;
-
-            const date = document.getElementById('newDate').value;
-            const name = document.getElementById('newName').value.trim();
-            const area = document.getElementById('newArea').value.trim();
-            const status = document.getElementById('newStatus').value;
-
-            if (!date || !name || !area) {
-                alert('날짜, 기사 이름, 담당 구역을 모두 입력해주세요.');
-                return;
-            }
-
-            const newObj = {
-                id: Date.now(),
-                date,
-                name,
-                area,
-                status
-            };
-
-            schedules.push(newObj);
-            saveData();
-
-            // 폼 초기화
-            document.getElementById('newName').value = '';
-            document.getElementById('newArea').value = '';
-
-            updateUI();
-            alert(`${name} 기사님의 스케줄이 추가되었습니다.`);
-        }
-
-        // 스케줄 삭제 (관리자 전용)
-        function deleteSchedule(id) {
-            if (!isAdmin) return;
-            if (confirm('해당 스케줄 항목을 삭제하시겠습니까?')) {
-                schedules = schedules.filter(item => item.id !== id);
-                saveData();
-                updateUI();
-            }
-        }
+        fetchSchedules();
     </script>
 </body>
 </html>
