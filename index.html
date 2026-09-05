@@ -7,6 +7,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        // 🔑 홈페이지 접속 비밀번호 설정 (원하시는 비밀번호로 변경하세요)
+        const SITE_PASSWORD = "9292";
+    </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
         
@@ -19,12 +23,41 @@
             min-height: 100vh;
         }
         
-        .container { max-width: 1000px; margin: 0 auto; }
-        
-        header { text-align: center; padding: 15px 0 20px; }
-        h1 { font-size: 1.4rem; color: #ffffff; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        /* 보안 인증 레이어 */
+        #auth-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999;
+        }
+        .auth-card {
+            background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 380px;
+            text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .auth-card h2 { font-size: 1.2rem; color: #0f172a; margin-bottom: 8px; }
+        .auth-card p { font-size: 0.85rem; color: #64748b; margin-bottom: 20px; }
+        .auth-card input {
+            width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;
+            font-size: 1rem; text-align: center; margin-bottom: 12px; outline: none;
+        }
+        .auth-card input:focus { border-color: #2563eb; }
+        .auth-card button {
+            width: 100%; padding: 12px; background: #2563eb; color: white; border: none;
+            border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer;
+        }
+        .auth-card button:active { background: #1d4ed8; }
+        .auth-error { color: #ef4444; font-size: 0.8rem; margin-top: 8px; display: none; }
 
-        /* 메인 레이아웃 (좌: 입력폼 및 일정 / 우: 휴무자 현황) */
+        /* 메인 컨텐츠 영역 */
+        .container { max-width: 1000px; margin: 0 auto; display: none; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0 20px; }
+        h1 { font-size: 1.4rem; color: #ffffff; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .btn-lock { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+
+        /* 메인 레이아웃 */
         .main-layout { display: grid; grid-template-columns: 1fr; gap: 16px; }
         @media (min-width: 768px) {
             .main-layout { grid-template-columns: 1.6fr 1fr; align-items: start; }
@@ -100,9 +133,22 @@
 </head>
 <body>
 
-    <div class="container">
+    <!-- 접속 보안 인증 팝업 -->
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <h2>🔒 배송 스케줄 현황 시스템</h2>
+            <p>보안을 위해 접속 비밀번호를 입력해 주세요.</p>
+            <input type="password" id="site-pw-input" placeholder="비밀번호 입력" onkeypress="if(event.keyCode==13) checkAuth()">
+            <button onclick="checkAuth()">접속하기</button>
+            <div id="auth-error-msg" class="auth-error">비밀번호가 일치하지 않습니다.</div>
+        </div>
+    </div>
+
+    <!-- 메인 시스템 화면 -->
+    <div class="container" id="main-container">
         <header>
             <h1>🚛 배송기사 스케줄 현황</h1>
+            <button class="btn-lock" onclick="lockSite()">🔒 잠금</button>
         </header>
 
         <div class="main-layout">
@@ -183,6 +229,37 @@
             </div>
         </div>
     </div>
+
+    <!-- 보안 로직 스크립트 -->
+    <script>
+        // 인증 확인
+        function checkAuth() {
+            const inputPw = document.getElementById("site-pw-input").value;
+            if (inputPw === SITE_PASSWORD) {
+                sessionStorage.setItem("authenticated", "true");
+                showMainContent();
+            } else {
+                document.getElementById("auth-error-msg").style.display = "block";
+            }
+        }
+
+        // 화면 표시
+        function showMainContent() {
+            document.getElementById("auth-overlay").style.display = "none";
+            document.getElementById("main-container").style.display = "block";
+        }
+
+        // 화면 잠금
+        function lockSite() {
+            sessionStorage.removeItem("authenticated");
+            location.reload();
+        }
+
+        // 세션 체크 (자동 로그인)
+        if (sessionStorage.getItem("authenticated") === "true") {
+            showMainContent();
+        }
+    </script>
 
     <!-- Firebase SDK (v10 모듈) -->
     <script type="module">
@@ -269,7 +346,6 @@
             const container = document.getElementById("off-schedule-list");
             container.innerHTML = "";
 
-            // '휴무' 항목만 필터링
             const offData = rawData.filter(item => item.status === "휴무");
             document.getElementById("off-count").innerText = `${offData.length}명`;
 
@@ -278,7 +354,6 @@
                 return;
             }
 
-            // 날짜별로 그룹화
             const groupedByDate = {};
             offData.forEach(item => {
                 const dateKey = item.date || "날짜 미지정";
@@ -286,7 +361,6 @@
                 groupedByDate[dateKey].push(item);
             });
 
-            // 날짜별 카드 출력
             Object.keys(groupedByDate).forEach(date => {
                 const groupDiv = document.createElement("div");
                 groupDiv.className = "off-group";
