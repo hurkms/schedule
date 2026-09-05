@@ -12,13 +12,13 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
     <script>
-        // 🔑 홈페이지 접속 비밀번호 설정 (원하시는 비밀번호로 변경하세요)
-        const SITE_PASSWORD = "9292";
+        // 🔑 비밀번호 설정
+        const SITE_PASSWORD = "9292";  // 사이트 접속 비밀번호
+        const ADMIN_PASSWORD = "8282"; // 관리자 권한 비밀번호
     </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
         
-        /* PK로지스틱스 스타일 배경 */
         body { 
             background: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)), 
                         url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat fixed;
@@ -27,8 +27,8 @@
             min-height: 100vh;
         }
         
-        /* 보안 인증 레이어 */
-        #auth-overlay {
+        /* 접속 인증 레이어 */
+        #auth-overlay, #admin-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.95);
@@ -36,6 +36,8 @@
             display: flex; justify-content: center; align-items: center;
             z-index: 9999;
         }
+        #admin-overlay { display: none; z-index: 10000; }
+
         .auth-card {
             background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 380px;
             text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
@@ -49,17 +51,19 @@
         .auth-card input:focus { border-color: #2563eb; }
         .auth-card button {
             width: 100%; padding: 12px; background: #2563eb; color: white; border: none;
-            border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer;
+            border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; margin-bottom: 6px;
         }
-        .auth-card button:active { background: #1d4ed8; }
+        .auth-card button.btn-close { background: #64748b; }
         .auth-error { color: #ef4444; font-size: 0.8rem; margin-top: 8px; display: none; }
 
         /* 메인 컨텐츠 영역 */
         .container { max-width: 1000px; margin: 0 auto; display: none; }
         
         header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0 20px; }
-        h1 { font-size: 1.4rem; color: #ffffff; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .btn-lock { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+        h1 { font-size: 1.3rem; color: #ffffff; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .header-btns { display: flex; gap: 6px; }
+        .btn-header { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+        .btn-header.admin-active { background: #2563eb; border-color: #2563eb; }
 
         /* 탭 네비게이션 스타일 */
         .tab-menu { display: flex; gap: 8px; margin-bottom: 16px; }
@@ -74,7 +78,6 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
-        /* 탭 컨텐츠 영역 */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
@@ -84,7 +87,7 @@
             .main-layout { grid-template-columns: 1.6fr 1fr; align-items: start; }
         }
 
-        /* 공통 카드 디자인 */
+        /* 패널 및 입력 폼 */
         .panel { 
             background: rgba(255, 255, 255, 0.95); 
             backdrop-filter: blur(8px);
@@ -95,7 +98,8 @@
         }
         .panel h3 { margin-bottom: 12px; font-size: 1rem; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
         
-        /* 관리자 입력 폼 */
+        .admin-only { display: none; } /* 관리자 전용 UI */
+
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .form-grid .full-width { grid-column: span 2; }
         
@@ -104,15 +108,16 @@
         .input-box input, .input-box select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; outline: none; background: #ffffff; }
         .input-box input:focus, .input-box select:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
 
-        .btn-add { grid-column: span 2; margin-top: 6px; background-color: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(37,99,235,0.4); }
-        .btn-add:active { background-color: #1d4ed8; }
+        .btn-group { grid-column: span 2; display: flex; gap: 6px; margin-top: 6px; }
+        .btn-add { flex: 1; background-color: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
+        .btn-cancel { background-color: #64748b; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: none; }
 
         /* 필터 영역 */
         .filter-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .filter-container span { font-size: 0.85rem; color: #f8fafc; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
         .filter-container select { padding: 6px 10px; border-radius: 6px; border: none; background: rgba(255, 255, 255, 0.9); font-size: 0.85rem; font-weight: 500; }
 
-        /* 스케줄 카드 리스트 */
+        /* 카드 리스트 */
         .schedule-list { display: flex; flex-direction: column; gap: 10px; }
         .card { 
             background: rgba(255, 255, 255, 0.96); 
@@ -141,8 +146,10 @@
 
         .card-footer { display: flex; justify-content: space-between; align-items: center; }
         .unit-price { font-size: 0.95rem; font-weight: bold; color: #16a34a; }
-        .btn-delete { background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
-        .btn-delete:active { background: #fca5a5; }
+        
+        .action-btns { display: flex; gap: 4px; }
+        .btn-edit { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+        .btn-delete { background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
 
         /* 휴무 현황 전용 스타일 */
         .off-group { margin-bottom: 12px; }
@@ -151,17 +158,19 @@
         .off-driver { font-weight: bold; color: #1e293b; }
         .off-area { color: #64748b; font-size: 0.75rem; }
 
-        /* 캘린더 커스텀 스타일 */
-        #calendar-container { background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .fc-header-toolbar { font-size: 0.85rem; }
-        .fc-toolbar-title { font-size: 1.1rem !important; color: #1e293b; }
+        /* 캘린더 모바일 최적화 스타일 */
+        #calendar-container { background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .fc-header-toolbar { font-size: 0.75rem; flex-wrap: wrap; gap: 6px; }
+        .fc-toolbar-title { font-size: 1rem !important; color: #1e293b; }
+        .fc-button { padding: 4px 8px !important; font-size: 0.75rem !important; }
         .fc-button-primary { background-color: #2563eb !important; border-color: #2563eb !important; }
-        .fc-event { cursor: pointer; border: none; padding: 2px 4px; font-size: 0.8rem; }
+        .fc-event { cursor: pointer; border: none; padding: 2px 4px; font-size: 0.75rem; text-align: center; border-radius: 4px; }
+        .fc-event-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body>
 
-    <!-- 접속 보안 인증 팝업 -->
+    <!-- 1. 접속 보안 인증 팝업 -->
     <div id="auth-overlay">
         <div class="auth-card">
             <h2>🔒 배송 스케줄 현황 시스템</h2>
@@ -172,11 +181,26 @@
         </div>
     </div>
 
+    <!-- 2. 관리자 인증 팝업 -->
+    <div id="admin-overlay">
+        <div class="auth-card">
+            <h2>⚙️ 관리자 권한 인증</h2>
+            <p>관리자 비밀번호를 입력해 주세요.</p>
+            <input type="password" id="admin-pw-input" placeholder="관리자 비밀번호" onkeypress="if(event.keyCode==13) checkAdminAuth()">
+            <button onclick="checkAdminAuth()">인증하기</button>
+            <button class="btn-close" onclick="closeAdminAuth()">취소</button>
+            <div id="admin-error-msg" class="auth-error">비밀번호가 일치하지 않습니다.</div>
+        </div>
+    </div>
+
     <!-- 메인 시스템 화면 -->
     <div class="container" id="main-container">
         <header>
             <h1>🚛 배송기사 스케줄 현황</h1>
-            <button class="btn-lock" onclick="lockSite()">🔒 잠금</button>
+            <div class="header-btns">
+                <button id="btn-admin-toggle" class="btn-header" onclick="openAdminModal()">⚙️ 관리자 모드</button>
+                <button class="btn-header" onclick="lockSite()">🔒 잠금</button>
+            </div>
         </header>
 
         <!-- 탭 네비게이션 -->
@@ -185,14 +209,14 @@
             <button class="tab-btn" onclick="switchTab('calendar-view', this)">📅 캘린더 뷰</button>
         </div>
 
-        <!-- 탭 1: 기존 목록형 스케줄 현황 -->
+        <!-- 탭 1: 목록형 스케줄 현황 -->
         <div id="list-view" class="tab-content active">
             <div class="main-layout">
-                <!-- 좌측: 일정 입력 & 전체 목록 -->
                 <div>
-                    <!-- 관리자 일정 추가 폼 -->
-                    <div class="panel">
-                        <h3>일정 등록 / 수정</h3>
+                    <!-- 관리자 전용: 일정 등록 / 수정 폼 -->
+                    <div class="panel admin-only" id="admin-form-panel">
+                        <h3 id="form-title">일정 등록</h3>
+                        <input type="hidden" id="edit-doc-id" value="">
                         <div class="form-grid">
                             <div class="input-box">
                                 <label>날짜</label>
@@ -230,7 +254,10 @@
                                 <label>비밀번호 (P/W)</label>
                                 <input type="text" id="input-pw" placeholder="비밀번호">
                             </div>
-                            <button class="btn-add" onclick="addSchedule()">일정 등록하기</button>
+                            <div class="btn-group">
+                                <button class="btn-add" id="btn-save" onclick="saveSchedule()">일정 등록하기</button>
+                                <button class="btn-cancel" id="btn-cancel" onclick="resetForm()">취소</button>
+                            </div>
                         </div>
                     </div>
 
@@ -274,9 +301,10 @@
         </div>
     </div>
 
-    <!-- 보안 로직 스크립트 -->
+    <!-- 보안 & 권한 제어 스크립트 -->
     <script>
-        // 인증 확인
+        let isAdmin = false;
+
         function checkAuth() {
             const inputPw = document.getElementById("site-pw-input").value;
             if (inputPw === SITE_PASSWORD) {
@@ -287,24 +315,73 @@
             }
         }
 
-        // 화면 표시
         function showMainContent() {
             document.getElementById("auth-overlay").style.display = "none";
             document.getElementById("main-container").style.display = "block";
+            
+            // 관리자 세션 체크
+            if (sessionStorage.getItem("admin_authenticated") === "true") {
+                setAdminMode(true);
+            }
         }
 
-        // 화면 잠금
         function lockSite() {
             sessionStorage.removeItem("authenticated");
+            sessionStorage.removeItem("admin_authenticated");
             location.reload();
         }
 
-        // 세션 체크 (자동 로그인)
+        function openAdminModal() {
+            if (isAdmin) {
+                // 이미 관리자인 경우 관리자 모드 해제
+                if (confirm("관리자 모드를 종료하시겠습니까?")) {
+                    setAdminMode(false);
+                }
+            } else {
+                document.getElementById("admin-overlay").style.display = "flex";
+                document.getElementById("admin-pw-input").value = "";
+                document.getElementById("admin-error-msg").style.display = "none";
+            }
+        }
+
+        function closeAdminAuth() {
+            document.getElementById("admin-overlay").style.display = "none";
+        }
+
+        function checkAdminAuth() {
+            const inputPw = document.getElementById("admin-pw-input").value;
+            if (inputPw === ADMIN_PASSWORD) {
+                sessionStorage.setItem("admin_authenticated", "true");
+                setAdminMode(true);
+                closeAdminAuth();
+            } else {
+                document.getElementById("admin-error-msg").style.display = "block";
+            }
+        }
+
+        function setAdminMode(status) {
+            isAdmin = status;
+            const adminPanel = id => document.getElementById(id);
+            const toggleBtn = adminPanel("btn-admin-toggle");
+
+            if (isAdmin) {
+                toggleBtn.innerText = "🔓 관리자 ON";
+                toggleBtn.classList.add("admin-active");
+                document.querySelectorAll(".admin-only").forEach(el => el.style.display = "block");
+            } else {
+                sessionStorage.removeItem("admin_authenticated");
+                toggleBtn.innerText = "⚙️ 관리자 모드";
+                toggleBtn.classList.remove("admin-active");
+                document.querySelectorAll(".admin-only").forEach(el => el.style.display = "none");
+                resetForm();
+            }
+            if (window.renderSchedules) window.renderSchedules();
+        }
+
         if (sessionStorage.getItem("authenticated") === "true") {
             showMainContent();
         }
 
-        // 탭 전환 함수
         function switchTab(tabId, btnElement) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -322,20 +399,20 @@
         }
     </script>
 
-    <!-- Firebase SDK (v10 모듈) -->
+    <!-- Firebase SDK & 실시간 연동 로직 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // ⚠️ 기존에 발급받으신 본인의 Firebase 설정값으로 변경되어 있는지 확인하세요!
+        // Firebase 개인 설정값 유지
         const firebaseConfig = {
-  apiKey: "AIzaSyDq2pOZ-94p0Y57TfHQvzzZTXRqoHOfkGI",
-  authDomain: "schedulemanager-8b273.firebaseapp.com",
-  projectId: "schedulemanager-8b273",
-  storageBucket: "schedulemanager-8b273.firebasestorage.app",
-  messagingSenderId: "804839729176",
-  appId: "1:804839729176:web:8471cfe9ddfb258df1bb6d",
-  measurementId: "G-K9G0JMQKTY"
+  apiKey: "AIzaSyDq2pOZ-94p0Y57TfHQvzzZTXRqoHOfkGI",
+  authDomain: "schedulemanager-8b273.firebaseapp.com",
+  projectId: "schedulemanager-8b273",
+  storageBucket: "schedulemanager-8b273.firebasestorage.app",
+  messagingSenderId: "804839729176",
+  appId: "1:804839729176:web:8471cfe9ddfb258df1bb6d",
+  measurementId: "G-K9G0JMQKTY"
 };
 
         const app = initializeApp(firebaseConfig);
@@ -343,7 +420,6 @@
         
         let rawData = [];
 
-        // 오늘 날짜 기본 세팅
         document.getElementById('input-date').value = new Date().toISOString().substring(0, 10);
 
         // Firestore 실시간 수신
@@ -360,7 +436,7 @@
             }
         });
 
-        // 메인 스케줄 리스트 렌더링
+        // 목록 렌더링 (관리자 모드 여부에 따른 삭제/수정 버튼 제어 포함)
         window.renderSchedules = function() {
             const filter = document.getElementById("filter-status").value;
             const container = document.getElementById("schedule-list");
@@ -379,6 +455,12 @@
                 card.className = "card";
                 
                 const formattedPrice = item.price ? Number(item.price).toLocaleString() + '원' : '-';
+                const actionBtnsHtml = isAdmin ? `
+                    <div class="action-btns">
+                        <button class="btn-edit" onclick="setupEditForm('${item.id}')">수정</button>
+                        <button class="btn-delete" onclick="deleteSchedule('${item.id}')">삭제</button>
+                    </div>
+                ` : '';
 
                 card.innerHTML = `
                     <div class="card-header">
@@ -398,14 +480,13 @@
                     </div>
                     <div class="card-footer">
                         <div class="unit-price">💰 ${formattedPrice}</div>
-                        <button class="btn-delete" onclick="deleteSchedule('${item.id}')">삭제</button>
+                        ${actionBtnsHtml}
                     </div>
                 `;
                 container.appendChild(card);
             });
         };
 
-        // 날짜별 휴무 예정자 카드 렌더링
         function renderOffSchedules() {
             const container = document.getElementById("off-schedule-list");
             container.innerHTML = "";
@@ -447,7 +528,7 @@
             });
         }
 
-        // FullCalendar 초기화 및 이벤트 바인딩
+        // FullCalendar 초기화 (기사 이름만 깨끗하게 표시)
         window.initCalendar = function() {
             const calendarEl = document.getElementById('calendar');
             window.calendarInstance = new FullCalendar.Calendar(calendarEl, {
@@ -460,24 +541,24 @@
                 },
                 eventClick: function(info) {
                     const ext = info.event.extendedProps;
-                    alert(`👤 기사명: ${ext.name}\n📅 날짜: ${info.event.startStr}\n📌 상태: ${ext.status}\n🗺️ 라우트: ${ext.route || '-'}\n📍 구역: ${ext.area || '-'}\n💰 단가: ${ext.price ? Number(ext.price).toLocaleString() + '원' : '-'}`);
+                    alert(`👤 기사명: ${ext.name}\n📅 날짜: ${info.event.startStr}\n📌 상태: ${ext.status}\n🗺️ 라우트: ${ext.route || '-'}\n📍 구역: ${ext.area || '-'}\n🔑 계정ID: ${ext.accountId || '-'}\n🔐 P/W: ${ext.accountPw || '-'}\n💰 단가: ${ext.price ? Number(ext.price).toLocaleString() + '원' : '-'}`);
                 }
             });
             window.calendarInstance.render();
             renderCalendarEvents();
         };
 
-        // 캘린더 데이터 세팅
+        // 캘린더 이벤트 매핑 (제목을 '기사 이름'으로만 통일)
         function renderCalendarEvents() {
             if (!window.calendarInstance) return;
             
             const events = rawData.map(item => {
-                let color = '#2563eb'; // 근무 (기본 파랑)
+                let color = '#2563eb'; // 근무 (파랑)
                 if (item.status === '대기') color = '#d97706'; // 대기 (주황)
                 if (item.status === '휴무') color = '#dc2626'; // 휴무 (빨강)
 
                 return {
-                    title: `${item.route ? '[' + item.route + '] ' : ''}${item.name} (${item.status})`,
+                    title: item.name ? `${item.name}` : '기사 미지정', // 기사 이름만 깔끔하게 표시
                     start: item.date,
                     backgroundColor: color,
                     borderColor: color,
@@ -486,7 +567,9 @@
                         status: item.status,
                         route: item.route,
                         area: item.area,
-                        price: item.price
+                        price: item.price,
+                        accountId: item.accountId,
+                        accountPw: item.accountPw
                     }
                 };
             });
@@ -495,8 +578,9 @@
             window.calendarInstance.addEventSource(events);
         }
 
-        // 일정 추가
-        window.addSchedule = async function() {
+        // 일정 추가 및 수정 저장 공통 처리
+        window.saveSchedule = async function() {
+            const docId = document.getElementById("edit-doc-id").value;
             const date = document.getElementById("input-date").value;
             const status = document.getElementById("input-status").value;
             const name = document.getElementById("input-name").value;
@@ -511,22 +595,66 @@
                 return;
             }
 
+            const dataObj = { date, status, name, route, area, price, accountId, accountPw };
+
             try {
-                await addDoc(collection(db, "schedules"), {
-                    date, status, name, route, area, price, accountId, accountPw,
-                    createdAt: new Date()
-                });
-                
-                document.getElementById("input-name").value = "";
-                document.getElementById("input-route").value = "";
-                document.getElementById("input-area").value = "";
-                document.getElementById("input-price").value = "";
-                document.getElementById("input-id").value = "";
-                document.getElementById("input-pw").value = "";
+                if (docId) {
+                    // 수정 처리
+                    await updateDoc(doc(db, "schedules", docId), dataObj);
+                    alert("스케줄이 수정되었습니다.");
+                } else {
+                    // 신규 등록 처리
+                    await addDoc(collection(db, "schedules"), {
+                        ...dataObj,
+                        createdAt: new Date()
+                    });
+                    alert("새 스케줄이 등록되었습니다.");
+                }
+                resetForm();
             } catch (e) {
-                console.error("추가 실패: ", e);
-                alert("일정 추가 중 오류가 발생했습니다.");
+                console.error("저장 실패: ", e);
+                alert("일정 저장 중 오류가 발생했습니다.");
             }
+        };
+
+        // 수정 Form 세팅
+        window.setupEditForm = function(id) {
+            const item = rawData.find(d => d.id === id);
+            if (!item) return;
+
+            document.getElementById("edit-doc-id").value = item.id;
+            document.getElementById("input-date").value = item.date || "";
+            document.getElementById("input-status").value = item.status || "근무";
+            document.getElementById("input-name").value = item.name || "";
+            document.getElementById("input-route").value = item.route || "";
+            document.getElementById("input-area").value = item.area || "";
+            document.getElementById("input-price").value = item.price || "";
+            document.getElementById("input-id").value = item.accountId || "";
+            document.getElementById("input-pw").value = item.accountPw || "";
+
+            document.getElementById("form-title").innerText = "일정 수정";
+            document.getElementById("btn-save").innerText = "수정 완료";
+            document.getElementById("btn-cancel").style.display = "block";
+            
+            // 등록 폼 위치로 스크롤
+            document.getElementById("admin-form-panel").scrollIntoView({ behavior: 'smooth' });
+        };
+
+        // 폼 초기화
+        window.resetForm = function() {
+            document.getElementById("edit-doc-id").value = "";
+            document.getElementById("input-date").value = new Date().toISOString().substring(0, 10);
+            document.getElementById("input-status").value = "근무";
+            document.getElementById("input-name").value = "";
+            document.getElementById("input-route").value = "";
+            document.getElementById("input-area").value = "";
+            document.getElementById("input-price").value = "";
+            document.getElementById("input-id").value = "";
+            document.getElementById("input-pw").value = "";
+
+            document.getElementById("form-title").innerText = "일정 등록";
+            document.getElementById("btn-save").innerText = "일정 등록하기";
+            document.getElementById("btn-cancel").style.display = "none";
         };
 
         // 일정 삭제
