@@ -158,34 +158,37 @@
         .off-driver { font-weight: bold; color: #1e293b; }
         .off-area { color: #64748b; font-size: 0.75rem; }
 
-        /* 캘린더 모바일 최적화 및 요약 배지 스타일 */
-        #calendar-container { background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .fc-header-toolbar { font-size: 0.75rem; flex-wrap: wrap; gap: 6px; }
-        .fc-toolbar-title { font-size: 1rem !important; color: #1e293b; }
-        .fc-button { padding: 4px 8px !important; font-size: 0.75rem !important; }
-        .fc-button-primary { background-color: #2563eb !important; border-color: #2563eb !important; }
+        /* 캘린더 모바일 공간 확보 & 버튼 축소 스타일 */
+        #calendar-container { background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         
-        /* 요약 배지 디자인 - 글자 안 잘리고 터치 영역 크게 확보 */
-        .fc-daygrid-day { cursor: pointer; }
-        .fc-daygrid-day-events { margin: 2px 0 !important; }
+        /* 툴바 축소하여 가로 공간 최대 확보 */
+        .fc-header-toolbar { margin-bottom: 8px !important; gap: 4px; }
+        .fc-toolbar-title { font-size: 0.95rem !important; font-weight: bold; color: #1e293b; }
+        .fc-button { padding: 3px 6px !important; font-size: 0.7rem !important; }
+        .fc-button-primary { background-color: #2563eb !important; border-color: #2563eb !important; }
+
+        /* 캘린더 셀 내부 패딩 및 패딩 제거 */
+        .fc .fc-daygrid-body-unbalanced .fc-daygrid-day-events { min-height: 1.5em; }
+        .fc-daygrid-day-frame { padding: 1px !important; }
+        .fc-daygrid-day-top { flex-direction: row; justify-content: center; padding-top: 1px !important; }
+        .fc-daygrid-day-number { font-size: 0.7rem !important; padding: 1px 2px !important; font-weight: 600; }
+
+        /* 기사 이름 칩(Chip) 디자인: 잘리지 않고 전체 표시 */
         .fc-event { 
             cursor: pointer; 
             border: none !important; 
-            padding: 2px 4px !important; 
-            margin: 2px 1px !important;
-            border-radius: 4px !important; 
+            padding: 1px 2px !important; 
+            margin: 1px 0 !important;
+            border-radius: 3px !important; 
             text-align: center;
         }
         .fc-event-title { 
-            font-size: 0.72rem !important; 
+            font-size: 0.65rem !important; 
             font-weight: 700 !important; 
-            white-space: nowrap; 
-            letter-spacing: -0.5px;
-        }
-
-        @media (max-width: 768px) {
-            .fc-event-title { font-size: 0.68rem !important; }
-            .fc-daygrid-day-number { font-size: 0.8rem !important; padding: 3px !important; }
+            white-space: normal !important; /* 줄바꿈 허용으로 이름 전체 노출 */
+            word-break: break-all;
+            line-height: 1.1;
+            letter-spacing: -0.8px; /* 자간 조절 */
         }
     </style>
 </head>
@@ -340,7 +343,6 @@
             document.getElementById("auth-overlay").style.display = "none";
             document.getElementById("main-container").style.display = "block";
             
-            // 관리자 세션 체크
             if (sessionStorage.getItem("admin_authenticated") === "true") {
                 setAdminMode(true);
             }
@@ -547,7 +549,7 @@
             });
         }
 
-        // FullCalendar 초기화 및 날짜 터치 팝업 이벤트
+        // FullCalendar 초기화 (기사 이름 노출 & 터치 팝업)
         window.initCalendar = function() {
             const calendarEl = document.getElementById('calendar');
             window.calendarInstance = new FullCalendar.Calendar(calendarEl, {
@@ -558,78 +560,44 @@
                     center: 'title',
                     right: 'dayGridMonth'
                 },
-                // 날짜 칸 아무곳이나 터치했을 때 해당 날짜 상세 명단 팝업 표시
-                dateClick: function(info) {
-                    showDayDetails(info.dateStr);
-                },
+                // 기사 클릭 시 상세 정보 팝업
                 eventClick: function(info) {
-                    showDayDetails(info.event.startStr);
+                    const ext = info.event.extendedProps;
+                    alert(`👤 기사명: ${ext.name}\n📅 날짜: ${info.event.startStr}\n📌 상태: ${ext.status}\n🗺️ 라우트: ${ext.route || '-'}\n📍 구역: ${ext.area || '-'}\n🔑 계정ID: ${ext.accountId || '-'}\n🔐 P/W: ${ext.accountPw || '-'}\n💰 단가: ${ext.price ? Number(ext.price).toLocaleString() + '원' : '-'}`);
                 }
             });
             window.calendarInstance.render();
             renderCalendarEvents();
         };
 
-        // 💡 핵심: 날짜별로 그룹화하여 [근무 N, 대기 N, 휴무 N] 요약 배지 생성
+        // 개별 기사 이름 노출 이벤트 생성
         function renderCalendarEvents() {
             if (!window.calendarInstance) return;
 
-            // 1. 날짜별 상태 수량 집계
-            const summaryByDate = {};
-            rawData.forEach(item => {
-                if (!item.date) return;
-                if (!summaryByDate[item.date]) {
-                    summaryByDate[item.date] = { '근무': 0, '대기': 0, '휴무': 0 };
-                }
-                if (summaryByDate[item.date][item.status] !== undefined) {
-                    summaryByDate[item.date][item.status]++;
-                }
-            });
+            const events = rawData.map(item => {
+                let color = '#2563eb'; // 근무 (파랑)
+                if (item.status === '대기') color = '#d97706'; // 대기 (주황)
+                if (item.status === '휴무') color = '#dc2626'; // 휴무 (빨강)
 
-            // 2. 집계된 데이터를 바탕으로 요약 이벤트 배지 배열 생성
-            const events = [];
-            const statusColors = {
-                '근무': '#2563eb', // 파랑
-                '대기': '#d97706', // 주황
-                '휴무': '#dc2626'  // 빨강
-            };
-
-            Object.keys(summaryByDate).forEach(dateStr => {
-                const counts = summaryByDate[dateStr];
-                ['근무', '대기', '휴무'].forEach(statusKey => {
-                    if (counts[statusKey] > 0) {
-                        events.push({
-                            title: `${statusKey} ${counts[statusKey]}`, // 예: "근무 4", "대기 1", "휴무 2"
-                            start: dateStr,
-                            backgroundColor: statusColors[statusKey],
-                            borderColor: statusColors[statusKey]
-                        });
+                return {
+                    title: item.name ? `${item.name}` : '기사 미지정',
+                    start: item.date,
+                    backgroundColor: color,
+                    borderColor: color,
+                    extendedProps: {
+                        name: item.name,
+                        status: item.status,
+                        route: item.route,
+                        area: item.area,
+                        price: item.price,
+                        accountId: item.accountId,
+                        accountPw: item.accountPw
                     }
-                });
+                };
             });
 
             window.calendarInstance.removeAllEvents();
             window.calendarInstance.addEventSource(events);
-        }
-
-        // 날짜 터치 시 전체 기사 명단을 한눈에 보는 팝업
-        function showDayDetails(dateStr) {
-            const daySchedules = rawData.filter(item => item.date === dateStr);
-            if (daySchedules.length === 0) {
-                alert(`📅 [${dateStr}]\n등록된 배송 스케줄이 없습니다.`);
-                return;
-            }
-
-            let msg = `📅 [${dateStr}] 배송 스케줄 (${daySchedules.length}명)\n`;
-            msg += `------------------------------------------\n`;
-            daySchedules.forEach((s, idx) => {
-                msg += `${idx + 1}. ${s.name} 기사님 [${s.status}]\n`;
-                msg += `   • 라우트: ${s.route || '-'}\n`;
-                msg += `   • 구역: ${s.area || '-'}\n`;
-                msg += `   • 계정: ID: ${s.accountId || '-'} / PW: ${s.accountPw || '-'}\n\n`;
-            });
-
-            alert(msg);
         }
 
         // 일정 저장 (등록 / 수정)
