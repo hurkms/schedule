@@ -169,31 +169,32 @@
         .off-area { color: #64748b; font-size: 0.75rem; }
 
         /* 캘린더 영역 스타일 */
-        #calendar-container { background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .calendar-nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: #f1f5f9; padding: 8px 12px; border-radius: 8px; }
-        .calendar-nav-bar button { padding: 6px 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 0.8rem; cursor: pointer; }
-        .calendar-nav-bar span { font-weight: bold; color: #0f172a; font-size: 0.95rem; }
-
-        .fc-header-toolbar { display: none !important; } /* 기본 상단 툴바 숨김 (커스텀 주차 이동 바 사용) */
+        #calendar-container { background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         
-        .fc-daygrid-day-frame { padding: 2px !important; min-height: 70px !important; }
-        .fc-daygrid-day-top { flex-direction: row; justify-content: center; padding-top: 2px !important; }
-        .fc-daygrid-day-number { font-size: 0.75rem !important; padding: 2px 4px !important; font-weight: 600; }
+        .fc-header-toolbar { margin-bottom: 8px !important; gap: 4px; }
+        .fc-toolbar-title { font-size: 0.95rem !important; font-weight: bold; color: #1e293b; }
+        .fc-button { padding: 3px 6px !important; font-size: 0.7rem !important; }
+        .fc-button-primary { background-color: #2563eb !important; border-color: #2563eb !important; }
+
+        .fc-daygrid-day-frame { padding: 1px !important; }
+        .fc-daygrid-day-top { flex-direction: row; justify-content: center; padding-top: 1px !important; }
+        .fc-daygrid-day-number { font-size: 0.7rem !important; padding: 1px 2px !important; font-weight: 600; }
 
         .fc-event { 
             cursor: pointer; 
             border: none !important; 
-            padding: 2px 4px !important; 
+            padding: 1px 2px !important; 
             margin: 1px 0 !important;
-            border-radius: 4px !important; 
+            border-radius: 3px !important; 
             text-align: center;
         }
         .fc-event-title { 
-            font-size: 0.7rem !important; 
+            font-size: 0.65rem !important; 
             font-weight: 700 !important; 
             white-space: normal !important; 
             word-break: break-all;
-            line-height: 1.2;
+            line-height: 1.1;
+            letter-spacing: -0.8px;
         }
     </style>
 </head>
@@ -308,7 +309,7 @@
                             <select id="filter-month" onchange="updateWeekOptions(); renderSchedules();">
                                 <!-- 월 옵션 동적 생성 -->
                             </select>
-                            <select id="filter-week" onchange="syncCalendarAndList(); renderSchedules();">
+                            <select id="filter-week" onchange="renderSchedules()">
                                 <!-- 주차 옵션 동적 생성 -->
                             </select>
                         </div>
@@ -347,14 +348,9 @@
             </div>
         </div>
 
-        <!-- 탭 2: 캘린더 뷰 (선택한 주차의 날짜만 깔끔하게 노출) -->
+        <!-- 탭 2: 캘린더 뷰 (월 전체 뷰 유지 + 지난 주차 자동 숨김) -->
         <div id="calendar-view" class="tab-content">
             <div id="calendar-container">
-                <div class="calendar-nav-bar">
-                    <button onclick="moveCalendarWeek(-1)">◀ 이전 주</button>
-                    <span id="calendar-week-title">10월 1주차 스케줄</span>
-                    <button onclick="moveCalendarWeek(1)">다음 주 ▶</button>
-                </div>
                 <div id="calendar"></div>
             </div>
         </div>
@@ -464,7 +460,7 @@
         }
     </script>
 
-    <!-- Firebase SDK & 주차별 자동 분류 로직 -->
+    <!-- Firebase SDK & 로직 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -514,6 +510,7 @@
         window.updateWeekOptions = function(isInitial = false) {
             const weekSelect = document.getElementById("filter-week");
             weekSelect.innerHTML = `
+                <option value="전체">전체 주차 보기</option>
                 <option value="1">첫째주 (1일~7일)</option>
                 <option value="2">둘째주 (8일~14일)</option>
                 <option value="3">셋째주 (15일~21일)</option>
@@ -556,7 +553,7 @@
                 const { month, week } = getWeekOfMonth(item.date);
                 
                 const matchMonth = (month === monthFilter);
-                const matchWeek = (String(week) === weekFilter);
+                const matchWeek = (weekFilter === "전체" || String(week) === weekFilter);
                 const matchStatus = (statusFilter === "전체" || item.status === statusFilter);
 
                 return matchMonth && matchWeek && matchStatus;
@@ -575,19 +572,17 @@
             });
         };
 
-        window.syncCalendarAndList = function() {
-            if (window.calendarInstance) {
-                renderCalendarEvents();
-            }
-        };
-
-        // FullCalendar 초기화 (주 단위 보기)
+        // FullCalendar 초기화 (월간 뷰 유지)
         window.initCalendar = function() {
             const calendarEl = document.getElementById('calendar');
             window.calendarInstance = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridWeek', // 주 단위로 깔끔하게 표시
+                initialView: 'dayGridMonth', // 월간 캘린더 유지
                 locale: 'ko',
-                headerToolbar: false, // 커스텀 네비게이션 사용
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth'
+                },
                 eventClick: function(info) {
                     const ext = info.event.extendedProps;
                     alert(`👤 기사명: ${ext.name}\n📅 날짜: ${info.event.startStr}\n📌 상태: ${ext.status}\n🗺️ 라우트: ${ext.route || '-'}\n📍 구역: ${ext.area || '-'}\n🔑 계정ID: ${ext.accountId || '-'}\n🔐 P/W: ${ext.accountPw || '-'}\n💰 단가: ${ext.price ? Number(ext.price).toLocaleString() + '원' : '-'}`);
@@ -597,54 +592,22 @@
             renderCalendarEvents();
         };
 
-        // 캘린더 주차 이동 버튼 연동
-        window.moveCalendarWeek = function(direction) {
-            const weekSelect = document.getElementById("filter-week");
-            let nextWeek = parseInt(weekSelect.value) + direction;
-            if (nextWeek >= 1 && nextWeek <= 5) {
-                weekSelect.value = String(nextWeek);
-                renderSchedules();
-                renderCalendarEvents();
-            }
-        };
-
+        // 캘린더에는 오늘 날짜 이전(지나간 주차들)의 일정을 제외하고 표시하여 복잡함 해결
         function renderCalendarEvents() {
             if (!window.calendarInstance) return;
 
-            const monthFilter = document.getElementById("filter-month").value; // "YYYY-MM"
-            const weekFilter = parseInt(document.getElementById("filter-week").value); // 1~5주차
+            const todayStr = new Date().toISOString().substring(0, 10);
 
-            // 선택된 월/주차에 해당하는 시작일과 종료일 계산
-            const [year, month] = monthFilter.split('-').map(Number);
-            const startDay = (weekFilter - 1) * 7 + 1;
-            const endDay = weekFilter === 5 ? new Date(year, month, 0).getDate() : weekFilter * 7;
+            // 오늘 날짜 이후(또는 오늘 포함)의 일정만 캘린더에 노출
+            const activeEventsData = rawData.filter(item => item.date && item.date >= todayStr);
 
-            const startDateStr = `${year}-${String(month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`;
-            const endDateObj = new Date(year, month - 1, endDay);
-            // 캘린더는 end가 exclusive이므로 하루 뒤로 설정
-            endDateObj.setDate(endDateObj.getDate() + 1);
-            const endDateStr = endDateObj.toISOString().substring(0, 10);
-
-            // 캘린더 화면 날짜 이동
-            window.calendarInstance.gotoDate(startDateStr);
-
-            // 타이틀 업데이트
-            document.getElementById("calendar-week-title").innerText = `${month}월 ${weekFilter}주차 스케줄`;
-
-            // 해당 주차의 데이터만 필터링하여 캘린더에 표시
-            const weekEventsData = rawData.filter(item => {
-                if (!item.date) return false;
-                const { month: itemMonth, week: itemWeek } = getWeekOfMonth(item.date);
-                return itemMonth === monthFilter && itemWeek === weekFilter;
-            });
-
-            const events = weekEventsData.map(item => {
+            const events = activeEventsData.map(item => {
                 let color = '#2563eb'; // 근무
                 if (item.status === '대기') color = '#d97706'; 
                 if (item.status === '휴무') color = '#dc2626'; 
 
                 return {
-                    title: item.name ? `${item.name} (${item.status})` : '기사 미지정',
+                    title: item.name ? `${item.name}` : '기사 미지정',
                     start: item.date,
                     backgroundColor: color,
                     borderColor: color,
