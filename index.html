@@ -27,8 +27,8 @@
             min-height: 100vh;
         }
         
-        /* 접속 인증 레이어 */
-        #auth-overlay, #admin-overlay {
+        /* 접속 인증 레이어 & 팝업 공통 */
+        #auth-overlay, #admin-overlay, #past-history-modal {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.95);
@@ -36,14 +36,16 @@
             display: flex; justify-content: center; align-items: center;
             z-index: 9999;
         }
-        #admin-overlay { display: none; z-index: 10000; }
+        #admin-overlay, #past-history-modal { display: none; }
+        #past-history-modal { z-index: 10001; }
 
         .auth-card {
-            background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 380px;
+            background: white; padding: 24px; border-radius: 16px; width: 90%; max-width: 450px;
             text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            max-height: 85vh; display: flex; flex-direction: column;
         }
         .auth-card h2 { font-size: 1.2rem; color: #0f172a; margin-bottom: 8px; }
-        .auth-card p { font-size: 0.85rem; color: #64748b; margin-bottom: 20px; }
+        .auth-card p { font-size: 0.85rem; color: #64748b; margin-bottom: 16px; }
         .auth-card input {
             width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;
             font-size: 1rem; text-align: center; margin-bottom: 12px; outline: none;
@@ -55,6 +57,9 @@
         }
         .auth-card button.btn-close { background: #64748b; }
         .auth-error { color: #ef4444; font-size: 0.8rem; margin-top: 8px; display: none; }
+
+        /* 지나간 스케줄 팝업 내부 */
+        .history-list { overflow-y: auto; text-align: left; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 60vh; padding-right: 4px; }
 
         /* 메인 컨텐츠 영역 */
         .container { max-width: 1000px; margin: 0 auto; display: none; }
@@ -112,10 +117,16 @@
         .btn-add { flex: 1; background-color: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; }
         .btn-cancel { background-color: #64748b; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: none; }
 
-        /* 필터 영역 */
-        .filter-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        /* 필터 영역 & 주차 선택바 */
+        .filter-panel { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(8px); padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .week-filter-bar { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+        .week-filter-bar select { flex: 1; min-width: 110px; padding: 8px; border-radius: 6px; border: none; background: #ffffff; font-size: 0.85rem; font-weight: bold; color: #0f172a; }
+        
+        .filter-container { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
         .filter-container span { font-size: 0.85rem; color: #f8fafc; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-        .filter-container select { padding: 6px 10px; border-radius: 6px; border: none; background: rgba(255, 255, 255, 0.9); font-size: 0.85rem; font-weight: 500; }
+        .filter-controls { display: flex; gap: 6px; }
+        .filter-controls select { padding: 6px 10px; border-radius: 6px; border: none; background: rgba(255, 255, 255, 0.9); font-size: 0.85rem; font-weight: 500; }
+        .btn-history { background: #d97706; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
 
         /* 카드 리스트 */
         .schedule-list { display: flex; flex-direction: column; gap: 10px; }
@@ -161,19 +172,16 @@
         /* 캘린더 모바일 공간 확보 & 버튼 축소 스타일 */
         #calendar-container { background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         
-        /* 툴바 축소하여 가로 공간 최대 확보 */
         .fc-header-toolbar { margin-bottom: 8px !important; gap: 4px; }
         .fc-toolbar-title { font-size: 0.95rem !important; font-weight: bold; color: #1e293b; }
         .fc-button { padding: 3px 6px !important; font-size: 0.7rem !important; }
         .fc-button-primary { background-color: #2563eb !important; border-color: #2563eb !important; }
 
-        /* 캘린더 셀 내부 패딩 및 패딩 제거 */
         .fc .fc-daygrid-body-unbalanced .fc-daygrid-day-events { min-height: 1.5em; }
         .fc-daygrid-day-frame { padding: 1px !important; }
         .fc-daygrid-day-top { flex-direction: row; justify-content: center; padding-top: 1px !important; }
         .fc-daygrid-day-number { font-size: 0.7rem !important; padding: 1px 2px !important; font-weight: 600; }
 
-        /* 기사 이름 칩(Chip) 디자인: 잘리지 않고 전체 표시 */
         .fc-event { 
             cursor: pointer; 
             border: none !important; 
@@ -185,10 +193,10 @@
         .fc-event-title { 
             font-size: 0.65rem !important; 
             font-weight: 700 !important; 
-            white-space: normal !important; /* 줄바꿈 허용으로 이름 전체 노출 */
+            white-space: normal !important; 
             word-break: break-all;
             line-height: 1.1;
-            letter-spacing: -0.8px; /* 자간 조절 */
+            letter-spacing: -0.8px;
         }
     </style>
 </head>
@@ -214,6 +222,18 @@
             <button onclick="checkAdminAuth()">인증하기</button>
             <button class="btn-close" onclick="closeAdminAuth()">취소</button>
             <div id="admin-error-msg" class="auth-error">비밀번호가 일치하지 않습니다.</div>
+        </div>
+    </div>
+
+    <!-- 3. 지난 스케줄 모아보기 팝업 -->
+    <div id="past-history-modal">
+        <div class="auth-card">
+            <h2>📂 지나간 스케줄 내역</h2>
+            <p>오늘 이전의 완료된 스케줄 모음입니다.</p>
+            <div class="history-list" id="past-schedule-list">
+                <!-- 지나간 스케줄 리스트 들어옴 -->
+            </div>
+            <button class="btn-close" onclick="closePastHistory()">닫기</button>
         </div>
     </div>
 
@@ -285,15 +305,28 @@
                         </div>
                     </div>
 
-                    <!-- 필터 영역 -->
-                    <div class="filter-container">
-                        <span id="total-count">총 0건</span>
-                        <select id="filter-status" onchange="renderSchedules()">
-                            <option value="전체">전체 보기</option>
-                            <option value="근무">근무만</option>
-                            <option value="대기">대기만</option>
-                            <option value="휴무">휴무만</option>
-                        </select>
+                    <!-- 주차 선택 및 필터 영역 -->
+                    <div class="filter-panel">
+                        <div class="week-filter-bar">
+                            <select id="filter-month" onchange="updateWeekOptions(); renderSchedules();">
+                                <!-- 월 옵션 동적 생성 -->
+                            </select>
+                            <select id="filter-week" onchange="renderSchedules()">
+                                <!-- 주차 옵션 동적 생성 -->
+                            </select>
+                        </div>
+                        <div class="filter-container">
+                            <span id="total-count">총 0건</span>
+                            <div class="filter-controls">
+                                <button class="btn-history" onclick="openPastHistory()">📂 지난 스케줄</button>
+                                <select id="filter-status" onchange="renderSchedules()">
+                                    <option value="전체">전체 보기</option>
+                                    <option value="근무">근무만</option>
+                                    <option value="대기">대기만</option>
+                                    <option value="휴무">휴무만</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 실시간 스케줄 카드 리스트 -->
@@ -418,29 +451,83 @@
                 }
             }
         }
+
+        function openPastHistory() {
+            document.getElementById("past-history-modal").style.display = "flex";
+            if(window.renderPastSchedules) window.renderPastSchedules();
+        }
+
+        function closePastHistory() {
+            document.getElementById("past-history-modal").style.display = "none";
+        }
     </script>
 
-    <!-- Firebase SDK & 실시간 연동 로직 -->
+    <!-- Firebase SDK & 주차별 자동 분류 로직 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Firebase 개인 설정값 유지
         const firebaseConfig = {
-  apiKey: "AIzaSyDq2pOZ-94p0Y57TfHQvzzZTXRqoHOfkGI",
-  authDomain: "schedulemanager-8b273.firebaseapp.com",
-  projectId: "schedulemanager-8b273",
-  storageBucket: "schedulemanager-8b273.firebasestorage.app",
-  messagingSenderId: "804839729176",
-  appId: "1:804839729176:web:8471cfe9ddfb258df1bb6d",
-  measurementId: "G-K9G0JMQKTY"
-};
+            apiKey: "AIzaSyDq2pOZ-94p0Y57TfHQvzzZTXRqoHOfkGI",
+            authDomain: "schedulemanager-8b273.firebaseapp.com",
+            projectId: "schedulemanager-8b273",
+            storageBucket: "schedulemanager-8b273.firebasestorage.app",
+            messagingSenderId: "804839729176",
+            appId: "1:804839729176:web:8471cfe9ddfb258df1bb6d",
+            measurementId: "G-K9G0JMQKTY"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         
         let rawData = [];
 
+        // 주차(Week) 계산 유틸리티 함수
+        function getWeekOfMonth(dateStr) {
+            if (!dateStr) return { month: '', week: 0 };
+            const d = new Date(dateStr);
+            const date = d.getDate();
+            const week = Math.ceil(date / 7);
+            const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            return { month, week };
+        }
+
+        // 초기 연/월 및 주차 필터 셀렉트박스 설정
+        function initMonthOptions() {
+            const monthSelect = document.getElementById("filter-month");
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth() + 1;
+            
+            monthSelect.innerHTML = "";
+            for (let m = 1; m <= 12; m++) {
+                const monthVal = `${currentYear}-${String(m).padStart(2, '0')}`;
+                const option = document.createElement("option");
+                option.value = monthVal;
+                option.innerText = `${currentYear}년 ${m}월`;
+                if (m === currentMonth) option.selected = true;
+                monthSelect.appendChild(option);
+            }
+            updateWeekOptions(true);
+        }
+
+        window.updateWeekOptions = function(isInitial = false) {
+            const weekSelect = document.getElementById("filter-week");
+            weekSelect.innerHTML = `
+                <option value="전체">전체 주차 보기</option>
+                <option value="1">첫째주 (1일~7일)</option>
+                <option value="2">둘째주 (8일~14일)</option>
+                <option value="3">셋째주 (15일~21일)</option>
+                <option value="4">넷째주 (22일~28일)</option>
+                <option value="5">다섯째주 (29일~31일)</option>
+            `;
+            if (isInitial) {
+                const currentWeek = Math.ceil(new Date().getDate() / 7);
+                weekSelect.value = String(currentWeek <= 5 ? currentWeek : 5);
+            }
+        };
+
+        initMonthOptions();
         document.getElementById('input-date').value = new Date().toISOString().substring(0, 10);
 
         // Firestore 실시간 수신
@@ -457,56 +544,94 @@
             }
         });
 
-        // 목록 렌더링
+        // 목록 렌더링 (월/주차 자동 필터 적용)
         window.renderSchedules = function() {
-            const filter = document.getElementById("filter-status").value;
+            const monthFilter = document.getElementById("filter-month").value;
+            const weekFilter = document.getElementById("filter-week").value;
+            const statusFilter = document.getElementById("filter-status").value;
+            
             const container = document.getElementById("schedule-list");
             container.innerHTML = "";
 
-            const filteredData = rawData.filter(item => filter === "전체" || item.status === filter);
+            const filteredData = rawData.filter(item => {
+                if (!item.date) return false;
+                const { month, week } = getWeekOfMonth(item.date);
+                
+                const matchMonth = (month === monthFilter);
+                const matchWeek = (weekFilter === "전체" || String(week) === weekFilter);
+                const matchStatus = (statusFilter === "전체" || item.status === statusFilter);
+
+                return matchMonth && matchWeek && matchStatus;
+            });
+
             document.getElementById("total-count").innerText = `총 ${filteredData.length}건`;
 
             if (filteredData.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 30px; color: #64748b; background: rgba(255,255,255,0.95); border-radius: 12px;">등록된 일정이 없습니다.</div>';
+                container.innerHTML = '<div style="text-align: center; padding: 30px; color: #64748b; background: rgba(255,255,255,0.95); border-radius: 12px;">선택한 주차에 등록된 스케줄이 없습니다.</div>';
                 return;
             }
 
             filteredData.forEach(item => {
-                const card = document.createElement("div");
-                card.className = "card";
-                
-                const formattedPrice = item.price ? Number(item.price).toLocaleString() + '원' : '-';
-                const actionBtnsHtml = isAdmin ? `
-                    <div class="action-btns">
-                        <button class="btn-edit" onclick="setupEditForm('${item.id}')">수정</button>
-                        <button class="btn-delete" onclick="deleteSchedule('${item.id}')">삭제</button>
-                    </div>
-                ` : '';
-
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span class="card-date">📅 ${item.date || '-'}</span>
-                        <span class="badge status-${item.status}">${item.status}</span>
-                    </div>
-                    <div class="card-main">
-                        <div>
-                            <div class="driver-info">${item.name || '-'} 기사님</div>
-                            <div class="area-info">📍 ${item.area || '-'}</div>
-                        </div>
-                        ${item.route ? `<span class="route-info">Route: ${item.route}</span>` : ''}
-                    </div>
-                    <div class="card-details">
-                        <div><b>ID:</b> ${item.accountId || '-'}</div>
-                        <div><b>P/W:</b> ${item.accountPw || '-'}</div>
-                    </div>
-                    <div class="card-footer">
-                        <div class="unit-price">💰 ${formattedPrice}</div>
-                        ${actionBtnsHtml}
-                    </div>
-                `;
+                const card = createScheduleCard(item);
                 container.appendChild(card);
             });
         };
+
+        // 지나간 스케줄 (오늘 이전) 팝업 렌더링
+        window.renderPastSchedules = function() {
+            const pastContainer = document.getElementById("past-schedule-list");
+            pastContainer.innerHTML = "";
+
+            const todayStr = new Date().toISOString().substring(0, 10);
+            const pastData = rawData.filter(item => item.date && item.date < todayStr)
+                                    .sort((a, b) => new Date(b.date) - new Date(a.date)); // 최신순
+
+            if (pastData.length === 0) {
+                pastContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748b;">지나간 스케줄 내역이 없습니다.</div>';
+                return;
+            }
+
+            pastData.forEach(item => {
+                const card = createScheduleCard(item);
+                pastContainer.appendChild(card);
+            });
+        };
+
+        function createScheduleCard(item) {
+            const card = document.createElement("div");
+            card.className = "card";
+            
+            const formattedPrice = item.price ? Number(item.price).toLocaleString() + '원' : '-';
+            const actionBtnsHtml = isAdmin ? `
+                <div class="action-btns">
+                    <button class="btn-edit" onclick="setupEditForm('${item.id}')">수정</button>
+                    <button class="btn-delete" onclick="deleteSchedule('${item.id}')">삭제</button>
+                </div>
+            ` : '';
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="card-date">📅 ${item.date || '-'}</span>
+                    <span class="badge status-${item.status}">${item.status}</span>
+                </div>
+                <div class="card-main">
+                    <div>
+                        <div class="driver-info">${item.name || '-'} 기사님</div>
+                        <div class="area-info">📍 ${item.area || '-'}</div>
+                    </div>
+                    ${item.route ? `<span class="route-info">Route: ${item.route}</span>` : ''}
+                </div>
+                <div class="card-details">
+                    <div><b>ID:</b> ${item.accountId || '-'}</div>
+                    <div><b>P/W:</b> ${item.accountPw || '-'}</div>
+                </div>
+                <div class="card-footer">
+                    <div class="unit-price">💰 ${formattedPrice}</div>
+                    ${actionBtnsHtml}
+                </div>
+            `;
+            return card;
+        }
 
         function renderOffSchedules() {
             const container = document.getElementById("off-schedule-list");
@@ -549,7 +674,7 @@
             });
         }
 
-        // FullCalendar 초기화 (기사 이름 노출 & 터치 팝업)
+        // FullCalendar 초기화
         window.initCalendar = function() {
             const calendarEl = document.getElementById('calendar');
             window.calendarInstance = new FullCalendar.Calendar(calendarEl, {
@@ -560,7 +685,6 @@
                     center: 'title',
                     right: 'dayGridMonth'
                 },
-                // 기사 클릭 시 상세 정보 팝업
                 eventClick: function(info) {
                     const ext = info.event.extendedProps;
                     alert(`👤 기사명: ${ext.name}\n📅 날짜: ${info.event.startStr}\n📌 상태: ${ext.status}\n🗺️ 라우트: ${ext.route || '-'}\n📍 구역: ${ext.area || '-'}\n🔑 계정ID: ${ext.accountId || '-'}\n🔐 P/W: ${ext.accountPw || '-'}\n💰 단가: ${ext.price ? Number(ext.price).toLocaleString() + '원' : '-'}`);
@@ -570,7 +694,6 @@
             renderCalendarEvents();
         };
 
-        // 개별 기사 이름 노출 이벤트 생성
         function renderCalendarEvents() {
             if (!window.calendarInstance) return;
 
@@ -600,7 +723,7 @@
             window.calendarInstance.addEventSource(events);
         }
 
-        // 일정 저장 (등록 / 수정)
+        // 일정 저장
         window.saveSchedule = async function() {
             const docId = document.getElementById("edit-doc-id").value;
             const date = document.getElementById("input-date").value;
@@ -637,7 +760,6 @@
             }
         };
 
-        // 수정 Form 세팅
         window.setupEditForm = function(id) {
             const item = rawData.find(d => d.id === id);
             if (!item) return;
@@ -655,11 +777,10 @@
             document.getElementById("form-title").innerText = "일정 수정";
             document.getElementById("btn-save").innerText = "수정 완료";
             document.getElementById("btn-cancel").style.display = "block";
-            
+            closePastHistory();
             document.getElementById("admin-form-panel").scrollIntoView({ behavior: 'smooth' });
         };
 
-        // 폼 초기화
         window.resetForm = function() {
             document.getElementById("edit-doc-id").value = "";
             document.getElementById("input-date").value = new Date().toISOString().substring(0, 10);
@@ -676,7 +797,6 @@
             document.getElementById("btn-cancel").style.display = "none";
         };
 
-        // 일정 삭제
         window.deleteSchedule = async function(id) {
             if (confirm("이 일정을 삭제하시겠습니까?")) {
                 await deleteDoc(doc(db, "schedules", id));
